@@ -8,7 +8,7 @@ const {User, Account } = require('../db')
 const router = express.Router()
 
 const signUpBody = zod.object({
-  username:zod.string(),
+  username:zod.string().email(),
   password:zod.string(),
   firstname:zod.string(),
   lastname:zod.string()
@@ -50,4 +50,37 @@ router.post('/signup', async function(req, res){
 
 })
 
+const signIn = zod.object({
+  username: zod.string().email(),
+  password: zod.string()
+})
 
+router.post('/signin', async function(req, res){
+  const {success} = signIn.safeParse(req.body)
+  if(!success) {
+    return res.status(411).json({
+      message: 'Invalid credentials'
+    }) 
+  }
+
+  const user = await findOne({
+    username: req.body.username,
+    password: req.body.password
+  })
+
+  if(user) {
+    const token = jwt.sign({
+      userId: user._id
+    }, JWT_SECRET)
+    res.json({
+      token: token
+    })
+    return
+  }
+  res.status(411).json({
+    message: "Error while logging in"
+})
+})
+
+
+module.exports = router;
